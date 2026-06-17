@@ -67,6 +67,9 @@ export interface Listing {
   listing_type?: string;
   quality_tier?: string;
   status?: string;
+  fetched_at?: string;
+  structured_at?: string;
+  run_id?: string;
   _enrichment?: Enrichment;
   _review_summary?: ReviewSummary;
   _fit_score?: number;

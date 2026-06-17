@@ -27,7 +27,7 @@ db/listing_enrichments.jsonl
 artifacts/fit_reports/
 artifacts/comparison_reports/
 artifacts/review_research/
-runs/
+/runs/
 
 # OS
 .DS_Store

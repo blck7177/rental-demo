@@ -1,98 +1,119 @@
-"""Runs router — demo pipeline status and run management."""
+"""Runs router — demo runs, live OpenClaw runs, and import."""
 
 from __future__ import annotations
 
+import json
 import time
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter
+from fastapi import APIRouter, BackgroundTasks
 from pydantic import BaseModel
+
+from src.services.openclaw_service import (
+    openclaw_available,
+    list_runs as list_openclaw_runs,
+    read_run_artifacts,
+    trigger_live_run,
+    STEP_LABELS,
+)
+from src.services.run_import_service import import_from_openclaw
 
 router = APIRouter()
 
 RUNS_DIR = Path(__file__).parents[3] / "runs"
-
-# In-memory run state for demo
 _demo_runs: dict[str, dict] = {}
+_live_runs: dict[str, dict] = {}
 
-DEMO_STEPS = [
-    {"step": "search_queries_generated", "label": "Search queries generated", "count": 4},
-    {"step": "candidates_found", "label": "Candidate URLs found", "count": 18},
-    {"step": "fetch_attempted", "label": "Pages fetched", "count": 15},
-    {"step": "fetch_succeeded", "label": "Successfully fetched", "count": 13},
-    {"step": "structured", "label": "Structured via LLM", "count": 13},
-    {"step": "validated", "label": "Passed validation", "count": 13},
-    {"step": "db_inserted", "label": "Inserted into database", "count": 13},
-]
+DEMO_STEPS = [{"step": s, "label": l, "count": c} for s, l, c in STEP_LABELS]
 
 
 class RunRequest(BaseModel):
     profile_id: str = "demo_profile_lic_001"
-    mode: str = "demo"  # "demo" | "live"
+    mode: str = "demo"
+
+
+class ImportRequest(BaseModel):
+    run_id: str | None = None
 
 
 @router.post("/runs/demo")
 def start_demo_run(req: RunRequest):
-    """Start a demo pipeline run (stable, uses seed data)."""
+    """Start a stable demo run using seed data."""
     run_id = f"demo_run_{uuid.uuid4().hex[:8]}"
-    _demo_runs[run_id] = {
-        "run_id": run_id,
-        "profile_id": req.profile_id,
-        "mode": req.mode,
-        "status": "running",
-        "started_at": time.time(),
-        "steps_completed": 0,
-        "steps": DEMO_STEPS,
-    }
-    # Immediately mark complete for demo
-    _demo_runs[run_id]["status"] = "complete"
-    _demo_runs[run_id]["steps_completed"] = len(DEMO_STEPS)
-
+    _demo_runs[run_id] = {"run_id": run_id, "mode": "demo", "status": "complete", "started_at": time.time(), "steps": DEMO_STEPS}
     return {
-        "run_id": run_id,
-        "status": "complete",
-        "message": "Demo run complete — seed data loaded into database",
+        "run_id": run_id, "status": "complete", "mode": "demo",
+        "message": "Demo run complete — seed data loaded",
         "steps": DEMO_STEPS,
         "summary": {
-            "candidates_found": 18,
-            "fetch_succeeded": 13,
-            "db_inserted": 13,
+            "candidates_found": 18, "fetch_succeeded": 13, "db_inserted": 13,
             "sources": ["streeteasy.com", "renthop.com", "apartments.com"],
             "neighborhoods": ["Long Island City", "Hunters Point", "Dutch Kills", "Sunnyside"],
         },
     }
 
 
+@router.post("/runs/live")
+def start_live_run(req: RunRequest, background_tasks: BackgroundTasks):
+    """Trigger a live pipeline run via nyc-rentals-openclaw wrappers."""
+    if not openclaw_available():
+        return {
+            "run_id": None, "status": "unavailable", "mode": "live",
+            "message": "nyc-rentals-openclaw not available. Check OPENCLAW_RENTAL_REPO_PATH in .env",
+            "openclaw_available": False,
+        }
+
+    run_id = f"live_run_{uuid.uuid4().hex[:8]}"
+    _live_runs[run_id] = {"run_id": run_id, "mode": "live", "status": "running", "started_at": time.time()}
+
+    def _run():
+        result = trigger_live_run(req.profile_id)
+        _live_runs[run_id].update(result)
+        _live_runs[run_id]["status"] = result.get("status", "complete")
+
+    background_tasks.add_task(_run)
+    return {"run_id": run_id, "status": "running", "mode": "live",
+            "message": "Live run started. Poll GET /api/runs/{run_id} for status.",
+            "openclaw_available": True}
+
+
+@router.post("/runs/{run_id}/import")
+def import_run(run_id: str):
+    """Import listings from an OpenClaw run into rental-demo db."""
+    return import_from_openclaw(run_id=None if run_id == "latest" else run_id)
+
+
+@router.get("/runs/openclaw/status")
+def openclaw_status():
+    available = openclaw_available()
+    from src.services.openclaw_service import RENTAL_REPO_PATH, get_openclaw_listings
+    return {
+        "available": available,
+        "repo_path": str(RENTAL_REPO_PATH),
+        "listings_in_db": len(get_openclaw_listings()) if available else 0,
+        "recent_runs": list_openclaw_runs()[:3] if available else [],
+    }
+
+
 @router.get("/runs/{run_id}")
 def get_run(run_id: str):
-    """Get run status."""
     if run_id in _demo_runs:
         return _demo_runs[run_id]
-    # Check disk
-    run_dir = RUNS_DIR / run_id
+    if run_id in _live_runs:
+        run = dict(_live_runs[run_id])
+        if run.get("status") == "complete":
+            run["artifacts"] = read_run_artifacts(run_id)
+        return run
+    from src.services.openclaw_service import RENTAL_REPO_PATH
+    run_dir = RENTAL_REPO_PATH / "runs" / run_id
     if run_dir.exists():
-        summary_file = run_dir / "run_summary.json"
-        if summary_file.exists():
-            import json
-            return json.loads(summary_file.read_text())
+        return read_run_artifacts(run_id)
     from fastapi import HTTPException
     raise HTTPException(status_code=404, detail=f"Run {run_id} not found")
 
 
 @router.get("/runs")
 def list_runs():
-    """List recent runs."""
-    runs = list(_demo_runs.values())
-    # Also check disk
-    RUNS_DIR.mkdir(exist_ok=True)
-    for run_dir in sorted(RUNS_DIR.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)[:5]:
-        if run_dir.is_dir():
-            summary_file = run_dir / "run_summary.json"
-            if summary_file.exists():
-                import json
-                try:
-                    runs.append(json.loads(summary_file.read_text()))
-                except Exception:
-                    pass
-    return {"runs": runs}
+    runs = list(_demo_runs.values()) + list(_live_runs.values()) + list_openclaw_runs()
+    return {"runs": runs, "openclaw_available": openclaw_available()}
