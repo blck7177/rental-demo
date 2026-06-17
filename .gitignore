@@ -1,0 +1,38 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+*.egg
+
+# Environment
+.env
+*.env.local
+
+# Node / Next.js
+apps/web/node_modules/
+apps/web/.next/
+apps/web/.swc/
+
+# DB & artifacts (runtime data, not committed)
+db/listing_index.json
+db/listings.jsonl
+db/user_profiles.jsonl
+db/fit_analyses.jsonl
+db/listing_enrichments.jsonl
+artifacts/fit_reports/
+artifacts/comparison_reports/
+artifacts/review_research/
+runs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.cursor/
+.vscode/

@@ -1,0 +1,160 @@
+[
+  {
+    "review_summary_id": "rev_jackson_park_001",
+    "listing_id": "lst_a1b2c3d4e5f60001",
+    "building_name": "Jackson Park",
+    "overall_signal": "positive",
+    "rating_snapshot": {
+      "google_rating": 4.2,
+      "review_count": 312
+    },
+    "positive_themes": [
+      "Stunning Manhattan skyline views",
+      "Excellent amenities (pool, gym, rooftop)",
+      "Professional 24-hour concierge",
+      "Modern finishes and well-maintained units",
+      "Great commute to Midtown via 7 train"
+    ],
+    "negative_themes": [
+      "Package room can get overwhelmed during holidays",
+      "Some noise from construction on nearby blocks",
+      "Elevator wait times during peak hours"
+    ],
+    "risk_flags": [
+      {
+        "type": "minor_operational",
+        "severity": "low",
+        "evidence": "Several reviews mention elevator delays during morning rush"
+      }
+    ],
+    "research_notes": "Jackson Park is generally well-regarded with strong amenities and professional management. Minor elevator delays during peak hours are the most common complaint. Overall an excellent choice for commuters prioritizing amenities.",
+    "researched_at": "2026-06-15T12:10:00Z",
+    "sources": ["google_places", "streeteasy_reviews"]
+  },
+  {
+    "review_summary_id": "rev_tower28_001",
+    "listing_id": "lst_a1b2c3d4e5f60002",
+    "building_name": "Tower 28",
+    "overall_signal": "mixed_positive",
+    "rating_snapshot": {
+      "google_rating": 4.0,
+      "review_count": 178
+    },
+    "positive_themes": [
+      "Excellent subway access (E, M, 7 trains)",
+      "Responsive superintendent",
+      "Good value for LIC",
+      "Well-maintained laundry room",
+      "Quiet residential floors"
+    ],
+    "negative_themes": [
+      "No doorman — security concerns for some residents",
+      "Occasional package theft reported in 2024",
+      "Street noise on lower floors from Queens Blvd"
+    ],
+    "risk_flags": [
+      {
+        "type": "security",
+        "severity": "medium",
+        "evidence": "2 reviews in 2024 mention package theft; management added lockers in late 2024"
+      },
+      {
+        "type": "noise",
+        "severity": "low",
+        "evidence": "Lower floors face Queens Blvd traffic noise"
+      }
+    ],
+    "research_notes": "Solid mid-tier option with strong transit access and good value. Package security was an issue in 2024 but management has since added lockers. Request floors 5+ to avoid street noise.",
+    "researched_at": "2026-06-15T12:15:00Z",
+    "sources": ["google_places", "renthop_reviews"]
+  },
+  {
+    "review_summary_id": "rev_forge_001",
+    "listing_id": "lst_a1b2c3d4e5f60003",
+    "building_name": "The Forge",
+    "overall_signal": "positive",
+    "rating_snapshot": {
+      "google_rating": 4.4,
+      "review_count": 89
+    },
+    "positive_themes": [
+      "Brand new building with premium finishes",
+      "Excellent co-working and amenity spaces",
+      "Dog-friendly with dedicated dog run",
+      "Responsive professional management",
+      "Great neighborhood restaurant scene"
+    ],
+    "negative_themes": [
+      "Premium pricing — higher than comparable LIC options",
+      "Still filling up — some amenities not yet fully operational",
+      "Limited review history (building is new)"
+    ],
+    "risk_flags": [],
+    "research_notes": "As a new-development building, The Forge has strong early reviews and premium finishes. Limited track record but management appears professional. Good for those willing to pay a premium for new construction.",
+    "researched_at": "2026-06-15T12:20:00Z",
+    "sources": ["google_places", "streeteasy_reviews"]
+  },
+  {
+    "review_summary_id": "rev_hps_001",
+    "listing_id": "lst_a1b2c3d4e5f60005",
+    "building_name": "Hunters Point South",
+    "overall_signal": "positive",
+    "rating_snapshot": {
+      "google_rating": 4.5,
+      "review_count": 256
+    },
+    "positive_themes": [
+      "Beautiful waterfront park access",
+      "Family-friendly environment",
+      "Excellent maintenance team",
+      "Quiet residential atmosphere",
+      "Related Companies — strong management reputation"
+    ],
+    "negative_themes": [
+      "Subway access slightly farther than other LIC buildings",
+      "Higher price point for the area",
+      "Limited nightlife/dining in immediate vicinity"
+    ],
+    "risk_flags": [],
+    "research_notes": "One of the highest-rated buildings in the dataset. Related Companies has a strong management track record. Best for residents who prioritize quiet, waterfront lifestyle over subway proximity.",
+    "researched_at": "2026-06-15T12:25:00Z",
+    "sources": ["google_places", "streeteasy_reviews", "yelp"]
+  },
+  {
+    "review_summary_id": "rev_instrata_001",
+    "listing_id": "lst_a1b2c3d4e5f60009",
+    "building_name": "Instrata at Queens Plaza",
+    "overall_signal": "mixed",
+    "rating_snapshot": {
+      "google_rating": 3.8,
+      "review_count": 445
+    },
+    "positive_themes": [
+      "Best subway access in LIC (6+ lines within 3 min walk)",
+      "Stunning amenity package including pool and spa",
+      "Modern luxury finishes",
+      "Convenient to Manhattan"
+    ],
+    "negative_themes": [
+      "Management responsiveness inconsistent",
+      "Slow maintenance response times reported",
+      "Can feel impersonal in large building",
+      "Some noise from Queens Plaza intersection"
+    ],
+    "risk_flags": [
+      {
+        "type": "management",
+        "severity": "medium",
+        "evidence": "Multiple reviews (2024-2025) cite slow maintenance response; Kushner Cos has mixed reputation in NYC market"
+      },
+      {
+        "type": "noise",
+        "severity": "medium",
+        "evidence": "Queens Plaza is a busy intersection; noise concerns on lower floors"
+      }
+    ],
+    "research_notes": "Exceptional transit access and amenities, but management quality is the main concern. Recommend requesting upper floors and clarifying maintenance SLAs before signing. Monitor recent reviews closely.",
+    "researched_at": "2026-06-15T12:30:00Z",
+    "sources": ["google_places", "streeteasy_reviews", "yelp", "reddit"]
+  }
+]
