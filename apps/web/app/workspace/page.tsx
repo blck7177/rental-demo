@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Listing,
+  ClientProfile,
   nlQuery,
   fitAnalysis,
   compareListings,
@@ -11,9 +12,11 @@ import {
   agentAction,
   recordSentMessage,
   getSentHistory,
+  getClients,
   SentHistoryEntry,
 } from "@/lib/api";
 import ClientPanel from "@/components/workspace/ClientPanel";
+import ClientSelector from "@/components/workspace/ClientSelector";
 import WorkflowProgress, { WorkflowStepId } from "@/components/workspace/WorkflowProgress";
 import AgentConsole, { ChatMessage } from "@/components/workspace/AgentConsole";
 import DisplayPanel, { DisplayTab } from "@/components/workspace/DisplayPanel";
@@ -65,26 +68,30 @@ function detectIntent(text: string): "search" | "analyze" | "compare" | "researc
   if (/研究|楼宇|building|review|reputation/.test(lower)) return "research";
   if (/分析|fit|score|适合|匹配/.test(lower)) return "analyze";
   if (/消息|推送|微信|wechat|wecom|message|draft|发送/.test(lower)) return "message";
-  if (/找|搜|search|show|under|studio|studio|budget|recommend/.test(lower)) return "search";
-  return "search"; // default fallback: treat as search
+  if (/找|搜|search|show|under|studio|budget|recommend/.test(lower)) return "search";
+  return "search";
 }
-
-const DEMO_PROFILE_NAME = "Emily Chen";
 
 function genId() {
   return Math.random().toString(36).slice(2, 10);
 }
 
-const WELCOME_MESSAGE: ChatMessage = {
-  id: "welcome",
-  role: "agent",
-  text: "你好！我是 Emily Chen 的专属租房助手。\n\n你可以用自然语言告诉我：\n• 搜索符合条件的房源\n• 分析某个房源的匹配度\n• 对比已选的房源\n• 研究楼宇口碑\n• 生成微信推送消息\n\n试试右侧的快捷指令，或者直接输入你的需求。",
-  timestamp: new Date(),
-};
+function buildWelcomeMessage(name: string): ChatMessage {
+  return {
+    id: "welcome",
+    role: "agent",
+    text: `你好！我是 ${name} 的专属租房助手。\n\n你可以用自然语言告诉我：\n• 搜索符合条件的房源\n• 分析某个房源的匹配度\n• 对比已选的房源\n• 研究楼宇口碑\n• 生成微信推送消息\n\n试试右侧的快捷指令，或者直接输入你的需求。`,
+    timestamp: new Date(),
+  };
+}
 
 export default function WorkspacePage() {
+  // ---- client state ----
+  const [clients, setClients] = useState<ClientProfile[]>([]);
+  const [activeClient, setActiveClient] = useState<ClientProfile | null>(null);
+
   // ---- chat state ----
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([buildWelcomeMessage("客户")]);
   const [inputValue, setInputValue] = useState("");
   const [isAgentLoading, setIsAgentLoading] = useState(false);
 
@@ -104,6 +111,21 @@ export default function WorkspacePage() {
   const [compareResult, setCompareResult] = useState<CompareResult | null>(null);
   const [messageResult, setMessageResult] = useState<MessageResult | null>(null);
   const [sentHistory, setSentHistory] = useState<SentHistoryEntry[]>([]);
+
+  // ---- load clients on mount ----
+  useEffect(() => {
+    getClients()
+      .then(({ clients: loaded }) => {
+        setClients(loaded);
+        if (loaded.length > 0) {
+          setActiveClient(loaded[0]);
+          setChatMessages([buildWelcomeMessage(loaded[0].name)]);
+        }
+      })
+      .catch(() => {
+        // backend unavailable — keep null, UI shows skeleton
+      });
+  }, []);
 
   // ---------- helpers ----------
   function addMessage(msg: Omit<ChatMessage, "id" | "timestamp">) {
@@ -129,6 +151,24 @@ export default function WorkspacePage() {
     });
   }
 
+  // ---------- client switching ----------
+  function handleSelectClient(client: ClientProfile) {
+    setActiveClient(client);
+    setListings([]);
+    setSelectedIds(new Set());
+    setFitResult(null);
+    setResearchResult(null);
+    setCompareResult(null);
+    setMessageResult(null);
+    setSentHistory([]);
+    setParsedSummary(undefined);
+    setCurrentTask("准备就绪 — 等待指令");
+    setActiveStep("intake");
+    setCompletedSteps(["intake"]);
+    setActiveTab("listings");
+    setChatMessages([buildWelcomeMessage(client.name)]);
+  }
+
   // ---------- action handlers ----------
   const handleSearch = useCallback(async (query: string) => {
     setCurrentTask(`搜索：${query.slice(0, 60)}...`);
@@ -144,9 +184,10 @@ export default function WorkspacePage() {
       completeStep("search");
 
       const count = data.results.length;
+      const name = activeClient?.name ?? "客户";
       addMessage({
         role: "agent",
-        text: `已为 Emily 搜索完成。共找到 ${count} 个房源，按匹配度排序。\n\n${data.parsed?.parsed_summary ?? ""}`,
+        text: `已为 ${name} 搜索完成。共找到 ${count} 个房源，按匹配度排序。\n\n${data.parsed?.parsed_summary ?? ""}`,
         action: "run_search",
       });
     } catch {
@@ -155,7 +196,7 @@ export default function WorkspacePage() {
       setLoadingTab(null);
       setCurrentTask("搜索完成 — 查看右侧结果");
     }
-  }, []);
+  }, [activeClient]);
 
   const handleAnalyze = useCallback(async (listingId: string) => {
     const listing = listings.find((l) => l.listing_id === listingId);
@@ -246,26 +287,28 @@ export default function WorkspacePage() {
       return;
     }
 
-    setCurrentTask(`生成 Emily 的微信推送消息...`);
+    const clientName = activeClient?.name ?? "客户";
+    const clientId = activeClient?.client_id ?? "cli_emily_chen_demo";
+
+    setCurrentTask(`生成 ${clientName} 的微信推送消息...`);
     setActiveStep("message");
     setLoadingTab("message");
     setActiveTab("message");
 
     try {
-      const result = await notifyWecom(ids, DEMO_PROFILE_NAME, false);
+      const result = await notifyWecom(ids, clientName, false);
       setMessageResult(result);
       completeStep("message");
-      // Record to sent history
       try {
-        await recordSentMessage("cli_emily_chen_demo", ids, result.message_preview, false);
-        const historyData = await getSentHistory("cli_emily_chen_demo");
+        await recordSentMessage(clientId, ids, result.message_preview, false);
+        const historyData = await getSentHistory(clientId);
         setSentHistory(historyData.sent_history);
       } catch {
         // Non-critical: ignore if backend unavailable
       }
       addMessage({
         role: "agent",
-        text: `消息草稿已生成，包含 ${result.listing_count} 个房源。\n在 Message tab 中查看预览，可复制后发送给 Emily。`,
+        text: `消息草稿已生成，包含 ${result.listing_count} 个房源。\n在 Message tab 中查看预览，可复制后发送给 ${clientName}。`,
         action: "draft_message",
       });
     } catch {
@@ -274,17 +317,17 @@ export default function WorkspacePage() {
       setLoadingTab(null);
       setCurrentTask("消息草稿已生成");
     }
-  }, []);
+  }, [activeClient]);
 
-  // ---------- agent action handler (Phase 3: uses /api/agent/action) ----------
+  // ---------- agent action handler ----------
   const handleAgentAction = useCallback(async (text: string) => {
     const selectedArr = Array.from(selectedIds);
     const topIds = listings.slice(0, 5).map((l) => l.listing_id);
     const targetId = selectedArr[0] ?? listings[0]?.listing_id;
 
     const context = {
-      client_id: "cli_emily_chen_demo",
-      client_name: "Emily Chen",
+      client_id: activeClient?.client_id ?? "cli_emily_chen_demo",
+      client_name: activeClient?.name ?? "Emily Chen",
       selected_listing_ids: selectedArr,
       target_listing_id: targetId,
       top_listing_ids: topIds,
@@ -318,10 +361,9 @@ export default function WorkspacePage() {
       setMessageResult(update.message_result as MessageResult);
       completeStep("message");
     }
-  }, [selectedIds, listings, addMessage, completeStep]);
+  }, [selectedIds, listings, activeClient]);
 
   // ---------- main send handler ----------
-  // Tries /api/agent/action first (Phase 3), falls back to direct service calls (Phase 1)
   const handleSend = useCallback(async (text: string) => {
     if (!text.trim() || isAgentLoading) return;
     setInputValue("");
@@ -329,10 +371,8 @@ export default function WorkspacePage() {
     addMessage({ role: "user", text });
 
     try {
-      // Phase 3 path: delegate to agent orchestration endpoint
       await handleAgentAction(text);
     } catch {
-      // Phase 1 fallback: direct service calls
       const intent = detectIntent(text);
       try {
         switch (intent) {
@@ -377,7 +417,7 @@ export default function WorkspacePage() {
   }, [
     isAgentLoading, selectedIds, listings,
     handleAgentAction, handleSearch, handleAnalyze, handleCompare,
-    handleResearch, handleDraftMessage, addMessage,
+    handleResearch, handleDraftMessage,
   ]);
 
   const totalLoading = isAgentLoading || loadingTab !== null;
@@ -389,7 +429,7 @@ export default function WorkspacePage() {
         <div className="flex items-center gap-3">
           <span className="text-xs text-slate-500 uppercase tracking-widest font-semibold">Rental Agent Workspace</span>
           <span className="w-1 h-1 rounded-full bg-slate-700" />
-          <span className="text-xs text-slate-600">Emily Chen</span>
+          <span className="text-xs text-slate-600">{activeClient?.name ?? "..."}</span>
         </div>
         <div className="flex items-center gap-3">
           {totalLoading && (
@@ -405,9 +445,14 @@ export default function WorkspacePage() {
       {/* Three-column workspace */}
       <div className="flex-1 overflow-hidden grid grid-cols-[240px_1fr_1fr] xl:grid-cols-[260px_1.1fr_1.4fr] gap-3 p-3 min-h-0">
 
-        {/* LEFT: Client Context Panel */}
-        <div className="overflow-y-auto min-h-0">
-          <ClientPanel />
+        {/* LEFT: Client Selector + Client Context Panel */}
+        <div className="flex flex-col gap-3 overflow-y-auto min-h-0">
+          <ClientSelector
+            clients={clients}
+            activeClientId={activeClient?.client_id ?? ""}
+            onSelect={handleSelectClient}
+          />
+          <ClientPanel client={activeClient} />
         </div>
 
         {/* CENTER: Workflow + Pipeline + Agent Console */}
@@ -434,6 +479,7 @@ export default function WorkspacePage() {
             onSend={handleSend}
             inputValue={inputValue}
             onInputChange={setInputValue}
+            clientName={activeClient?.name}
           />
         </div>
 

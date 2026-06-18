@@ -11,13 +11,15 @@ export interface ChatMessage {
   action?: string;
 }
 
-const QUICK_ACTIONS = [
-  "帮 Emily 找 LIC studio，预算 3200 以下，安静优先",
-  "研究 top 1 的楼宇评价",
-  "把选中的房源进行对比分析",
-  "生成微信推送消息",
-  "找最快通勤到 Midtown 的选项",
-];
+function getQuickActions(name: string): string[] {
+  return [
+    `帮 ${name} 找 LIC studio，预算 3200 以下，安静优先`,
+    "研究 top 1 的楼宇评价",
+    "把选中的房源进行对比分析",
+    "生成微信推送消息",
+    "找最快通勤到 Midtown 的选项",
+  ];
+}
 
 interface Props {
   messages: ChatMessage[];
@@ -25,9 +27,11 @@ interface Props {
   onSend: (text: string) => void;
   inputValue: string;
   onInputChange: (val: string) => void;
+  clientName?: string;
 }
 
-export default function AgentConsole({ messages, isLoading, onSend, inputValue, onInputChange }: Props) {
+export default function AgentConsole({ messages, isLoading, onSend, inputValue, onInputChange, clientName }: Props) {
+  const quickActions = getQuickActions(clientName ?? "客户");
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -50,7 +54,7 @@ export default function AgentConsole({ messages, isLoading, onSend, inputValue, 
       <div className="px-4 py-3 border-b border-white/5 flex-shrink-0 flex items-center gap-2">
         <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
         <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Agent Console</p>
-        <span className="ml-auto text-xs text-slate-600">Emily Chen</span>
+        <span className="ml-auto text-xs text-slate-600">{clientName ?? "客户"}</span>
       </div>
 
       {/* Messages */}
@@ -59,7 +63,7 @@ export default function AgentConsole({ messages, isLoading, onSend, inputValue, 
           <div className="text-center py-6">
             <p className="text-slate-500 text-sm mb-4">向 Agent 发出指令，驱动工作台更新</p>
             <div className="space-y-2">
-              {QUICK_ACTIONS.map((qa) => (
+              {quickActions.map((qa) => (
                 <button
                   key={qa}
                   onClick={() => onSend(qa)}
