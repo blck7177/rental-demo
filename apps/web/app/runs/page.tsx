@@ -18,7 +18,13 @@ interface RunResult {
 
 type Mode = "demo" | "live";
 
-const PIPELINE_LABELS = ["Search Queries", "Candidate URLs", "Fetch & Extract", "Validate", "DB Insert"];
+const PIPELINE_STAGES = [
+  { id: "search", label: "Search Queries", icon: "🔍" },
+  { id: "candidates", label: "Candidate URLs", icon: "🔗" },
+  { id: "fetch", label: "Fetch & Extract", icon: "⬇" },
+  { id: "validate", label: "Validate", icon: "✓" },
+  { id: "db", label: "DB Insert", icon: "🗄" },
+];
 
 const DEFAULT_STEPS: Step[] = [
   { step: "search_queries_generated", label: "Search queries generated", count: 4 },
@@ -30,26 +36,43 @@ const DEFAULT_STEPS: Step[] = [
   { step: "db_inserted", label: "Inserted into database", count: 13 },
 ];
 
+const ARTIFACTS = [
+  { name: "candidate_pool.jsonl", desc: "18 candidate URLs discovered", icon: "🔗" },
+  { name: "search_ledger.jsonl", desc: "4 search queries + results", icon: "📋" },
+  { name: "structured_listings.jsonl", desc: "13 AI-structured listings", icon: "✨" },
+  { name: "review_research.json", desc: "13 building reputation reports", icon: "📊" },
+];
+
+const SAMPLE_QUERIES = [
+  'site:streeteasy.com "Long Island City" studio under 3200',
+  'site:renthop.com LIC studio "no fee" 2024',
+  'site:apartments.com "Hunters Point" studio available',
+  'site:streeteasy.com "Queens Plaza" studio laundry',
+];
+
 export default function RunStudioPage() {
   const [mode, setMode] = useState<Mode>("demo");
   const [runResult, setRunResult] = useState<RunResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [animStep, setAnimStep] = useState(-1);
+  const [showQueries, setShowQueries] = useState(false);
 
   async function startRun() {
     setLoading(true);
     setError(null);
     setRunResult(null);
     setAnimStep(-1);
+    setShowQueries(false);
 
     try {
       if (mode === "demo") {
+        setShowQueries(true);
         const result = await startDemoRun();
         const steps = (result as { steps?: Step[] }).steps || DEFAULT_STEPS;
         for (let i = 0; i < steps.length; i++) {
           setAnimStep(i);
-          await new Promise((r) => setTimeout(r, 320));
+          await new Promise((r) => setTimeout(r, 380));
         }
         setRunResult(result as RunResult);
       } else {
@@ -70,135 +93,282 @@ export default function RunStudioPage() {
 
   const stepsToShow = runResult?.steps || DEFAULT_STEPS;
   const totalCompleted = runResult?.status === "complete" ? stepsToShow.length : loading ? animStep + 1 : 0;
+  const isComplete = runResult?.status === "complete";
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-10">
+    <div className="max-w-7xl mx-auto px-6 py-8">
+      {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Run Studio</h1>
-        <p className="text-slate-500 text-sm mt-1">Search → Fetch → Extract → Validate → Database</p>
+        <div className="flex items-center gap-3 mb-2">
+          <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
+            Run Studio
+          </span>
+          {loading && (
+            <span className="text-xs text-blue-400 animate-pulse bg-blue-500/10 border border-blue-500/20 px-3 py-1 rounded-full">
+              Pipeline running...
+            </span>
+          )}
+          {isComplete && (
+            <span className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 rounded-full">
+              Run complete ✓
+            </span>
+          )}
+        </div>
+        <h1 className="text-3xl font-bold text-white">Pipeline Execution</h1>
+        <p className="text-slate-400 mt-1">Search → Fetch → Extract → Validate → Database</p>
       </div>
 
-      {/* Pipeline diagram */}
-      <div className="flex items-center justify-center gap-2 mb-8 p-5 bg-slate-50 rounded-xl border border-slate-200 overflow-x-auto">
-        {PIPELINE_LABELS.map((label, i) => (
-          <div key={label} className="flex items-center gap-2 flex-shrink-0">
-            <div className={`text-center transition-all duration-300 ${i < totalCompleted ? "opacity-100" : "opacity-25"}`}>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold mx-auto mb-1 transition-colors ${i < totalCompleted ? "bg-emerald-500" : "bg-slate-300"}`}>
-                {i < totalCompleted ? "✓" : i + 1}
+      {/* Pipeline stages bar */}
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-8 overflow-x-auto">
+        <div className="flex items-center justify-center gap-3 min-w-max mx-auto">
+          {PIPELINE_STAGES.map((stage, i) => {
+            const stageCompleted = i < Math.ceil((totalCompleted / stepsToShow.length) * PIPELINE_STAGES.length);
+            return (
+              <div key={stage.id} className="flex items-center gap-3">
+                <motion.div
+                  animate={{ opacity: stageCompleted ? 1 : 0.3, scale: stageCompleted ? 1 : 0.95 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex flex-col items-center gap-1.5"
+                >
+                  <div className={`w-11 h-11 rounded-full flex items-center justify-center text-lg transition-all duration-500 ${
+                    stageCompleted
+                      ? "bg-emerald-500 shadow-lg shadow-emerald-500/30"
+                      : "bg-white/10 border border-white/10"
+                  }`}>
+                    {stageCompleted ? "✓" : stage.icon}
+                  </div>
+                  <p className="text-xs text-slate-400 text-center leading-tight max-w-[72px]">{stage.label}</p>
+                </motion.div>
+                {i < PIPELINE_STAGES.length - 1 && (
+                  <motion.div
+                    className={`h-0.5 w-10 rounded-full transition-colors duration-500 ${
+                      stageCompleted ? "bg-emerald-500" : "bg-white/10"
+                    }`}
+                  />
+                )}
               </div>
-              <p className="text-xs text-slate-600 max-w-[72px] text-center leading-tight">{label}</p>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left column: mode + steps */}
+        <div className="lg:col-span-2 space-y-5">
+          {/* Mode selector */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Run Mode</p>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              {([
+                { id: "demo" as Mode, label: "Stable Demo", badge: "Recommended", desc: "Uses seed data — always succeeds. Best for presentations." },
+                { id: "live" as Mode, label: "Live OpenClaw Run", badge: "Advanced", desc: "Triggers real pipeline. Requires API keys + local setup." },
+              ]).map(({ id, label, badge, desc }) => (
+                <button key={id} onClick={() => setMode(id)}
+                  className={`p-4 rounded-xl border text-left transition-all ${
+                    mode === id
+                      ? "border-emerald-500/50 bg-emerald-500/10 shadow-lg shadow-emerald-500/10"
+                      : "border-white/10 bg-white/3 hover:bg-white/5"
+                  }`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className={`font-semibold text-sm ${mode === id ? "text-emerald-300" : "text-white"}`}>{label}</p>
+                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                      id === "demo" ? "bg-emerald-500/20 text-emerald-400" : "bg-slate-500/20 text-slate-400"
+                    }`}>{badge}</span>
+                  </div>
+                  <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
+                </button>
+              ))}
             </div>
-            {i < PIPELINE_LABELS.length - 1 && (
-              <div className={`h-0.5 w-6 transition-colors ${i < totalCompleted - 1 ? "bg-emerald-400" : "bg-slate-200"}`} />
+            <button onClick={startRun} disabled={loading}
+              className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white py-3 rounded-xl font-semibold transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
+              {loading ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Running pipeline...
+                </>
+              ) : (
+                `Start ${mode === "demo" ? "Demo" : "Live"} Run →`
+              )}
+            </button>
+          </div>
+
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-red-300 text-sm">{error}</div>
+          )}
+
+          {/* Search queries panel */}
+          <AnimatePresence>
+            {showQueries && (
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                className="bg-white/5 border border-white/10 rounded-2xl p-5">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Generated Search Queries</p>
+                <div className="space-y-2">
+                  {SAMPLE_QUERIES.map((q, i) => (
+                    <motion.div key={i} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.12 }}
+                      className="flex items-start gap-2 bg-slate-900/50 rounded-lg px-3 py-2">
+                      <span className="text-emerald-400 text-xs mt-0.5 flex-shrink-0">→</span>
+                      <code className="text-xs text-slate-300 font-mono break-all">{q}</code>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Pipeline steps */}
+          <AnimatePresence>
+            {(loading || runResult) && (
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                className="bg-white/5 border border-white/10 rounded-2xl p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pipeline Steps</p>
+                  {runResult?.run_id && (
+                    <span className="font-mono text-xs text-slate-500 bg-white/5 px-2 py-0.5 rounded">
+                      {runResult.run_id}
+                    </span>
+                  )}
+                </div>
+
+                {runResult?.status === "unavailable" && (
+                  <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-4 text-yellow-300 text-sm">
+                    {runResult.message}
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  {stepsToShow.map((step, i) => {
+                    const isDone = isComplete || i <= animStep;
+                    const isCurrent = loading && i === animStep;
+                    return (
+                      <motion.div key={step.step}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: isDone ? 1 : 0.3, x: 0 }}
+                        transition={{ delay: i * 0.04 }}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all ${
+                          isDone
+                            ? "bg-emerald-500/10 border-emerald-500/20"
+                            : "bg-white/3 border-white/5"
+                        }`}>
+                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                          isDone ? "bg-emerald-500 text-white" : "bg-white/10 text-slate-500"
+                        } ${isCurrent ? "animate-pulse" : ""}`}>
+                          {isDone ? "✓" : i + 1}
+                        </span>
+                        <span className={`flex-1 text-sm ${isDone ? "text-slate-200" : "text-slate-500"}`}>
+                          {step.label}
+                        </span>
+                        {isDone && (
+                          <span className="text-emerald-400 font-bold text-sm tabular-nums">{step.count}</span>
+                        )}
+                        {isCurrent && (
+                          <span className="w-3 h-3 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Summary */}
+          <AnimatePresence>
+            {isComplete && runResult?.summary && (
+              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-5">
+                <p className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-4">Run Summary</p>
+                <div className="grid grid-cols-3 gap-4 text-center mb-4">
+                  {[
+                    { val: runResult.summary.candidates_found, label: "URLs Found" },
+                    { val: runResult.summary.fetch_succeeded, label: "Fetched" },
+                    { val: runResult.summary.db_inserted, label: "In Database" },
+                  ].map(({ val, label }) => (
+                    <div key={label} className="bg-emerald-500/10 rounded-xl py-3 px-2">
+                      <p className="text-3xl font-bold text-emerald-400">{val}</p>
+                      <p className="text-xs text-emerald-600 mt-0.5">{label}</p>
+                    </div>
+                  ))}
+                </div>
+                {runResult.summary.sources && (
+                  <p className="text-sm text-emerald-300"><span className="text-emerald-500">Sources:</span> {runResult.summary.sources.join(", ")}</p>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* CTA */}
+          <div className="flex gap-3">
+            {runResult ? (
+              <>
+                <Link href="/listings" className="flex-1 text-center bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors">
+                  View Listings Database →
+                </Link>
+                <button onClick={startRun} className="px-5 py-2.5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 text-sm rounded-xl transition-colors">
+                  Run Again
+                </button>
+              </>
+            ) : !loading && (
+              <Link href="/listings" className="block text-center border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 py-2.5 rounded-xl text-sm w-full transition-colors">
+                Skip → Browse Existing Listings
+              </Link>
             )}
           </div>
-        ))}
-      </div>
-
-      {/* Mode toggle + start button */}
-      <div className="bg-white border border-slate-200 rounded-xl p-5 mb-6">
-        <p className="text-sm font-semibold text-slate-700 mb-3">Run Mode</p>
-        <div className="flex gap-3 mb-4">
-          {([
-            { id: "demo" as Mode, label: "Stable Demo", desc: "Uses seed data — always succeeds. Recommended for presentations." },
-            { id: "live" as Mode, label: "Live OpenClaw Run", desc: "Triggers real nyc-rentals-openclaw pipeline. Requires API keys and may have partial results." },
-          ]).map(({ id, label, desc }) => (
-            <button key={id} onClick={() => setMode(id)}
-              className={`flex-1 p-4 rounded-xl border text-left transition-colors ${mode === id ? "border-emerald-500 bg-emerald-50 text-emerald-800" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
-              <p className="font-semibold text-sm">{label}</p>
-              <p className="text-xs mt-0.5 opacity-70">{desc}</p>
-            </button>
-          ))}
         </div>
-        <button onClick={startRun} disabled={loading}
-          className="bg-emerald-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-emerald-700 disabled:opacity-50 transition-colors w-full">
-          {loading ? "Running..." : `🚀 Start ${mode === "demo" ? "Demo" : "Live"} Run`}
-        </button>
-      </div>
 
-      {error && <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-5 text-red-700 text-sm">{error}</div>}
-
-      {/* Pipeline steps */}
-      <AnimatePresence>
-        {(loading || runResult) && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-slate-200 rounded-xl p-6 mb-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-slate-800">
-                {loading ? "Pipeline running..." : `${runResult?.mode === "live" ? "Live" : "Demo"} run · ${runResult?.run_id}`}
-              </h2>
-              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                runResult?.status === "complete" ? "bg-emerald-50 text-emerald-600" :
-                runResult?.status === "running" ? "bg-blue-50 text-blue-600 animate-pulse" :
-                runResult?.status === "unavailable" ? "bg-yellow-50 text-yellow-600" :
-                "bg-slate-100 text-slate-500"
-              }`}>
-                {loading ? "running..." : runResult?.status}
-              </span>
+        {/* Right column: artifacts + info */}
+        <div className="space-y-5">
+          {/* Artifacts panel */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Pipeline Artifacts</p>
+            <div className="space-y-2.5">
+              {ARTIFACTS.map((a, i) => (
+                <motion.div key={a.name}
+                  animate={{ opacity: isComplete ? 1 : 0.3 }}
+                  transition={{ delay: i * 0.1 }}
+                  className={`flex items-start gap-3 p-3 rounded-xl border transition-all ${
+                    isComplete ? "bg-slate-900/50 border-white/10" : "bg-white/3 border-white/5"
+                  }`}>
+                  <span className="text-base flex-shrink-0 mt-0.5">{a.icon}</span>
+                  <div>
+                    <p className={`text-xs font-mono font-medium ${isComplete ? "text-slate-200" : "text-slate-500"}`}>
+                      {a.name}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-0.5">{a.desc}</p>
+                  </div>
+                  {isComplete && (
+                    <span className="ml-auto text-emerald-500 text-xs flex-shrink-0">✓</span>
+                  )}
+                </motion.div>
+              ))}
             </div>
+          </div>
 
-            {runResult?.status === "unavailable" && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 text-yellow-700 text-sm">{runResult.message}</div>
-            )}
-            {runResult?.status === "running" && mode === "live" && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 text-blue-700 text-sm">
-                Live pipeline running in background. Results appear when complete.
-              </div>
-            )}
-
-            <div className="space-y-2">
-              {stepsToShow.map((step, i) => {
-                const isDone = runResult?.status === "complete" || i <= animStep;
-                const isCurrent = loading && i === animStep;
-                return (
-                  <motion.div key={step.step}
-                    initial={{ opacity: 0, x: -8 }} animate={{ opacity: isDone ? 1 : 0.3, x: 0 }} transition={{ delay: i * 0.05 }}
-                    className={`flex items-center gap-3 p-3 rounded-lg ${isDone ? "bg-emerald-50 border border-emerald-100" : "bg-slate-50 border border-slate-100"}`}>
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${isDone ? "bg-emerald-500 text-white" : "bg-slate-200 text-slate-500"} ${isCurrent ? "animate-pulse" : ""}`}>
-                      {isDone ? "✓" : i + 1}
-                    </span>
-                    <span className="flex-1 text-sm text-slate-700">{step.label}</span>
-                    {isDone && <span className="text-emerald-600 font-semibold text-sm">{step.count}</span>}
-                  </motion.div>
-                );
-              })}
+          {/* Architecture info */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Architecture</p>
+            <div className="space-y-2 text-xs text-slate-400">
+              {[
+                { label: "Search", value: "4 targeted queries/source" },
+                { label: "Sources", value: "StreetEasy · RentHop · Apartments.com" },
+                { label: "Extraction", value: "Claude / GPT structured output" },
+                { label: "Validation", value: "JSON Schema + field rules" },
+                { label: "Storage", value: "JSONL append-only DB" },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex gap-2">
+                  <span className="text-slate-600 w-20 flex-shrink-0">{label}</span>
+                  <span className="text-slate-400">{value}</span>
+                </div>
+              ))}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
 
-      {/* Summary */}
-      <AnimatePresence>
-        {runResult?.status === "complete" && runResult.summary && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-            className="bg-emerald-50 border border-emerald-200 rounded-xl p-5 mb-5">
-            <h2 className="font-semibold text-emerald-800 mb-3">Run Summary</h2>
-            <div className="grid grid-cols-3 gap-4 text-center mb-3">
-              <div><p className="text-3xl font-bold text-emerald-700">{runResult.summary.candidates_found}</p><p className="text-xs text-emerald-600">URLs Found</p></div>
-              <div><p className="text-3xl font-bold text-emerald-700">{runResult.summary.fetch_succeeded}</p><p className="text-xs text-emerald-600">Fetched</p></div>
-              <div><p className="text-3xl font-bold text-emerald-700">{runResult.summary.db_inserted}</p><p className="text-xs text-emerald-600">In Database</p></div>
-            </div>
-            {runResult.summary.sources && <p className="text-sm text-emerald-700"><strong>Sources:</strong> {runResult.summary.sources.join(", ")}</p>}
-            {runResult.summary.neighborhoods && <p className="text-sm text-emerald-700 mt-1"><strong>Neighborhoods:</strong> {runResult.summary.neighborhoods.join(", ")}</p>}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {runResult ? (
-        <div className="flex gap-3">
-          <Link href="/listings" className="flex-1 text-center bg-emerald-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors">
-            View Listings Database →
+          <Link href="/listings"
+            className="block text-center bg-slate-900/50 border border-white/10 hover:bg-white/5 text-slate-300 py-2.5 rounded-xl text-sm transition-colors">
+            Browse 13 Seeded Listings →
           </Link>
-          <button onClick={startRun} className="px-5 py-2.5 border border-slate-200 text-slate-600 text-sm rounded-xl hover:bg-slate-50 transition-colors">
-            Run Again
-          </button>
         </div>
-      ) : (
-        !loading && (
-          <Link href="/listings" className="block text-center border border-slate-200 text-slate-600 py-2.5 rounded-xl text-sm hover:bg-slate-50 transition-colors">
-            Skip → Browse Existing Listings
-          </Link>
-        )
-      )}
+      </div>
     </div>
   );
 }

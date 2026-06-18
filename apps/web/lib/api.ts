@@ -197,6 +197,141 @@ export async function startDemoRun(): Promise<{
   return apiFetch("/api/runs/demo", { method: "POST", body: JSON.stringify({ mode: "demo" }) });
 }
 
+// Clients
+export interface ClientProfile {
+  client_id: string;
+  name: string;
+  status: string;
+  move_in?: string;
+  budget: { min?: number; max?: number };
+  neighborhoods: string[];
+  unit_type?: string;
+  commute_destination?: string;
+  must_haves: string[];
+  avoid: string[];
+  weights: { commute: number; building_quality: number; price: number; amenities: number };
+  channel: string;
+  notes: string[];
+  shortlist: { saved: number; sent: number; liked: number; rejected: number; total?: number };
+  created_at?: string;
+  updated_at?: string;
+}
+
+export async function getClients(): Promise<{ clients: ClientProfile[] }> {
+  return apiFetch("/api/clients");
+}
+
+export async function getClient(clientId: string): Promise<{ client: ClientProfile }> {
+  return apiFetch(`/api/clients/${clientId}`);
+}
+
+export async function createClient(data: Partial<ClientProfile> & { name: string }): Promise<{ client: ClientProfile }> {
+  return apiFetch("/api/clients", { method: "POST", body: JSON.stringify(data) });
+}
+
+export async function updateClient(clientId: string, updates: Partial<ClientProfile>): Promise<{ client: ClientProfile }> {
+  return apiFetch(`/api/clients/${clientId}`, { method: "PATCH", body: JSON.stringify(updates) });
+}
+
+export async function addClientNote(clientId: string, note: string): Promise<{ client: ClientProfile }> {
+  return apiFetch(`/api/clients/${clientId}/notes`, { method: "POST", body: JSON.stringify({ note }) });
+}
+
+export async function addToShortlist(clientId: string, listingId: string, status = "saved", feedback?: string) {
+  return apiFetch(`/api/clients/${clientId}/shortlist`, {
+    method: "POST",
+    body: JSON.stringify({ listing_id: listingId, status, feedback }),
+  });
+}
+
+export async function getClientShortlist(clientId: string) {
+  return apiFetch(`/api/clients/${clientId}/shortlist`);
+}
+
+// Agent Action
+export interface AgentActionContext {
+  client_id?: string;
+  client_name?: string;
+  selected_listing_ids?: string[];
+  target_listing_id?: string;
+  top_listing_ids?: string[];
+  profile?: UserProfile;
+}
+
+export interface AgentActionResult {
+  action: string;
+  agent_reply: string;
+  ui_update: {
+    tab?: string;
+    listings?: Listing[];
+    parsed_summary?: string;
+    fit_result?: unknown;
+    research_result?: unknown;
+    compare_result?: unknown;
+    message_result?: unknown;
+    note_added?: string;
+  } | null;
+  classified_intent?: {
+    action: string;
+    params: Record<string, unknown>;
+    reasoning: string;
+  };
+}
+
+export async function agentAction(text: string, context?: AgentActionContext): Promise<AgentActionResult> {
+  return apiFetch<AgentActionResult>("/api/agent/action", {
+    method: "POST",
+    body: JSON.stringify({ text, context }),
+  });
+}
+
+// Feedback & Sent History
+export interface FeedbackEntry {
+  feedback_id: string;
+  client_id: string;
+  type: string;
+  text: string;
+  listing_id?: string;
+  impact?: string;
+  recorded_at: string;
+}
+
+export interface SentHistoryEntry {
+  sent_id: string;
+  client_id: string;
+  listing_ids: string[];
+  message_preview: string;
+  channel: string;
+  sent: boolean;
+  created_at: string;
+}
+
+export async function recordFeedback(clientId: string, text: string, feedbackType = "general", listingId?: string) {
+  return apiFetch("/api/feedback", {
+    method: "POST",
+    body: JSON.stringify({ client_id: clientId, feedback_type: feedbackType, text, listing_id: listingId }),
+  });
+}
+
+export async function recordSentMessage(clientId: string, listingIds: string[], messagePreview: string, sent = false) {
+  return apiFetch("/api/feedback/sent", {
+    method: "POST",
+    body: JSON.stringify({ client_id: clientId, listing_ids: listingIds, message_preview: messagePreview, sent }),
+  });
+}
+
+export async function getClientFeedback(clientId: string): Promise<{ feedback: FeedbackEntry[]; count: number }> {
+  return apiFetch(`/api/feedback/${clientId}`);
+}
+
+export async function getSentHistory(clientId: string): Promise<{ sent_history: SentHistoryEntry[]; count: number }> {
+  return apiFetch(`/api/feedback/sent/${clientId}`);
+}
+
+export async function getFollowUpSummary(clientId: string) {
+  return apiFetch(`/api/feedback/followup/${clientId}`);
+}
+
 // Notify
 export async function notifyWecom(listingIds: string[], profileName?: string, sendToWecom?: boolean): Promise<NotifyResult> {
   return apiFetch<NotifyResult>("/api/notify/wecom", {

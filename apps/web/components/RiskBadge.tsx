@@ -7,9 +7,9 @@ interface Props {
 }
 
 const STYLES: Record<string, string> = {
-  low: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  medium: "bg-yellow-50 text-yellow-700 border-yellow-200",
-  high: "bg-red-50 text-red-700 border-red-200",
+  low: "bg-emerald-500/15 text-emerald-300 border-emerald-500/25",
+  medium: "bg-yellow-500/15 text-yellow-300 border-yellow-500/25",
+  high: "bg-red-500/15 text-red-300 border-red-500/25",
 };
 
 const ICONS: Record<string, string> = { low: "✓", medium: "⚠", high: "⛔" };
