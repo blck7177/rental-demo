@@ -44,17 +44,32 @@ Example broker commands:
 
 ## Quick Start
 
-### Backend (FastAPI)
+### Option A: Docker (recommended)
 
 ```bash
-cd /home/ubuntu/rental-demo
+cp .env.example .env   # fill in ANTHROPIC_API_KEY or OPENAI_API_KEY
+docker compose up --build
+```
+
+| Service | URL |
+|---------|-----|
+| Agent Workspace | http://localhost:3102/workspace |
+| API docs (Swagger) | http://localhost:8102/docs |
+
+> Default host ports: web `3102`, api `8102`. Override with `WEB_HOST_PORT` / `API_HOST_PORT` in `.env`.
+
+### Option B: Manual dev
+
+**Backend (FastAPI)**
+
+```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 cp .env.example .env   # fill in ANTHROPIC_API_KEY or OPENAI_API_KEY
 uvicorn apps.api.main:app --reload --port 8000
 ```
 
-### Frontend (Next.js)
+**Frontend (Next.js)**
 
 ```bash
 cd apps/web
@@ -172,10 +187,20 @@ Interactive docs: **http://localhost:8000/docs**
 ## Environment Variables
 
 ```bash
-ANTHROPIC_API_KEY=...        # Primary LLM (Claude)
-OPENAI_API_KEY=...           # Fallback LLM (GPT)
-DEMO_MODE=true               # Use seed data (recommended)
-NEXT_PUBLIC_API_URL=http://localhost:8000
-WECOM_WEBHOOK_URL=...        # Optional: WeCom push
-OPENCLAW_RENTAL_REPO_PATH=... # Optional: live pipeline
+ANTHROPIC_API_KEY=...          # Primary LLM (Claude)
+OPENAI_API_KEY=...             # Fallback LLM (GPT)
+DEMO_MODE=true                 # Use seed data (recommended)
+
+# Docker host ports (container always uses 8000/3000 internally)
+API_HOST_PORT=8102             # Host port for API  → http://localhost:8102
+WEB_HOST_PORT=3102             # Host port for web  → http://localhost:3102
+
+# Docker: browser-visible API URL (set automatically by docker-compose)
+NEXT_PUBLIC_API_URL=http://localhost:8102
+
+# Docker: allowed CORS origins for FastAPI (comma-separated)
+CORS_ORIGINS=http://localhost:3102,http://127.0.0.1:3102
+
+WECOM_WEBHOOK_URL=...          # Optional: WeCom push
+OPENCLAW_RENTAL_REPO_PATH=...  # Optional: live pipeline
 ```

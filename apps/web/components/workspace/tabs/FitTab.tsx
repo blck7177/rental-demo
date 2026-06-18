@@ -30,10 +30,10 @@ const BREAKDOWN_LABELS: Record<string, string> = {
 export default function FitTab({ result, isLoading }: Props) {
   if (isLoading) {
     return (
-      <div className="p-6 space-y-4">
-        <div className="h-32 bg-slate-800/60 rounded-xl animate-pulse" />
-        <div className="h-24 bg-slate-800/60 rounded-xl animate-pulse" />
-        <div className="h-24 bg-slate-800/60 rounded-xl animate-pulse" />
+      <div className="p-5 space-y-3">
+        <div className="h-24 bg-gray-100 rounded-xl animate-pulse" />
+        <div className="h-20 bg-gray-100 rounded-xl animate-pulse" />
+        <div className="h-20 bg-gray-100 rounded-xl animate-pulse" />
       </div>
     );
   }
@@ -41,41 +41,46 @@ export default function FitTab({ result, isLoading }: Props) {
   if (!result) {
     return (
       <div className="flex flex-col items-center justify-center h-full py-16 text-center px-8">
-        <div className="w-12 h-12 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center mb-4">
-          <span className="text-2xl">🎯</span>
+        <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center mb-3">
+          <span className="text-base text-gray-400">F</span>
         </div>
-        <p className="text-slate-400 text-sm font-medium mb-2">暂无 Fit 分析</p>
-        <p className="text-slate-600 text-xs">在 Listings tab 中悬停房源卡片，点击「Analyze」</p>
+        <p className="text-gray-500 text-sm font-medium mb-1">No fit analysis</p>
+        <p className="text-gray-400 text-xs">Click "Fit" on a listing row or ask the agent to analyze.</p>
       </div>
     );
   }
 
-  const scoreColor = result.fit_score >= 80 ? "text-emerald-400" : result.fit_score >= 65 ? "text-blue-400" : "text-amber-400";
+  const scoreColor =
+    result.fit_score >= 80 ? "text-emerald-600" :
+    result.fit_score >= 65 ? "text-blue-600" :
+    "text-amber-600";
 
   return (
     <div className="p-4 space-y-4 overflow-y-auto">
       {/* Score hero */}
-      <div className="bg-slate-800/60 rounded-xl border border-white/10 p-5 flex items-center gap-6">
-        <ScoreRing score={result.fit_score} size={80} strokeWidth={7} />
+      <div className="bg-gray-50 rounded-xl border border-gray-200 p-5 flex items-center gap-6">
+        <ScoreRing score={result.fit_score} size={76} strokeWidth={7} />
         <div>
-          <p className="text-xs text-slate-500 mb-1 uppercase tracking-wide">Fit Score</p>
-          <p className={`text-4xl font-bold ${scoreColor}`}>{result.fit_score}<span className="text-lg font-normal text-slate-500">/100</span></p>
-          <p className="text-white font-medium mt-1">{result.fit_label}</p>
+          <p className="text-xs text-gray-400 mb-1 uppercase tracking-wide">Fit Score</p>
+          <p className={`text-4xl font-bold ${scoreColor}`}>
+            {result.fit_score}<span className="text-lg font-normal text-gray-400">/100</span>
+          </p>
+          <p className="text-gray-700 font-medium mt-1">{result.fit_label}</p>
           {result.listing_name && (
-            <p className="text-slate-500 text-xs mt-0.5">{result.listing_name}</p>
+            <p className="text-gray-400 text-xs mt-0.5">{result.listing_name}</p>
           )}
         </div>
       </div>
 
       {/* Score breakdown */}
       {Object.keys(result.score_breakdown).length > 0 && (
-        <div className="bg-slate-800/60 rounded-xl border border-white/10 p-4">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Score Breakdown</p>
+        <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Score Breakdown</p>
           <div className="space-y-2">
             {Object.entries(result.score_breakdown).map(([key, val]) => (
               <div key={key} className="flex items-center gap-3">
-                <span className="text-xs text-slate-500 w-32 flex-shrink-0">{BREAKDOWN_LABELS[key] || key}</span>
-                <div className="flex-1 bg-slate-700 rounded-full h-1.5">
+                <span className="text-xs text-gray-400 w-32 flex-shrink-0">{BREAKDOWN_LABELS[key] || key}</span>
+                <div className="flex-1 bg-gray-200 rounded-full h-1.5">
                   <div
                     className={`h-1.5 rounded-full transition-all ${
                       val >= 80 ? "bg-emerald-500" : val >= 60 ? "bg-blue-500" : "bg-amber-500"
@@ -83,7 +88,7 @@ export default function FitTab({ result, isLoading }: Props) {
                     style={{ width: `${Math.min(val, 100)}%` }}
                   />
                 </div>
-                <span className="text-xs text-slate-400 w-7 text-right font-medium">{Math.round(val)}</span>
+                <span className="text-xs text-gray-500 w-7 text-right font-medium">{Math.round(val)}</span>
               </div>
             ))}
           </div>
@@ -92,12 +97,12 @@ export default function FitTab({ result, isLoading }: Props) {
 
       {/* Why it matches */}
       {result.why_it_matches.length > 0 && (
-        <div className="bg-emerald-500/8 border border-emerald-500/20 rounded-xl p-4">
-          <p className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-2.5">Why It Matches</p>
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+          <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-2.5">Why It Matches</p>
           <ul className="space-y-2">
             {result.why_it_matches.map((w, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
-                <span className="text-emerald-500 flex-shrink-0 mt-0.5">✓</span>
+              <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                <span className="text-emerald-600 flex-shrink-0 mt-0.5">✓</span>
                 <span>{w}</span>
               </li>
             ))}
@@ -107,12 +112,12 @@ export default function FitTab({ result, isLoading }: Props) {
 
       {/* Tradeoffs */}
       {result.tradeoffs.length > 0 && (
-        <div className="bg-amber-500/8 border border-amber-500/20 rounded-xl p-4">
-          <p className="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-2.5">Tradeoffs</p>
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <p className="text-xs font-semibold text-amber-700 uppercase tracking-wider mb-2.5">Tradeoffs</p>
           <ul className="space-y-2">
             {result.tradeoffs.map((t, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-slate-300">
-                <span className="text-amber-500 flex-shrink-0 mt-0.5">△</span>
+              <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
+                <span className="text-amber-600 flex-shrink-0 mt-0.5">△</span>
                 <span>{t}</span>
               </li>
             ))}
@@ -121,9 +126,9 @@ export default function FitTab({ result, isLoading }: Props) {
       )}
 
       {/* Verdict */}
-      <div className="bg-slate-800/60 border border-white/10 rounded-xl p-4">
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Verdict</p>
-        <p className="text-sm text-slate-200 leading-relaxed">{result.verdict}</p>
+      <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Verdict</p>
+        <p className="text-sm text-gray-700 leading-relaxed">{result.verdict}</p>
       </div>
     </div>
   );

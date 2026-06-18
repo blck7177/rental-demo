@@ -14,29 +14,21 @@ interface Props {
   isLoading?: boolean;
 }
 
-const VERDICT_ICONS: Record<string, string> = {
-  best_overall: "🏆",
-  best_value: "💰",
-  lowest_risk: "🛡️",
-  best_commute: "🚇",
-  best_amenities: "✨",
-};
-
 const VERDICT_LABELS: Record<string, string> = {
-  best_overall: "Best Overall",
-  best_value: "Best Value",
-  lowest_risk: "Lowest Risk",
-  best_commute: "Best Commute",
+  best_overall:   "Best Overall",
+  best_value:     "Best Value",
+  lowest_risk:    "Lowest Risk",
+  best_commute:   "Best Commute",
   best_amenities: "Best Amenities",
 };
 
 export default function CompareTab({ result, isLoading }: Props) {
   if (isLoading) {
     return (
-      <div className="p-6 space-y-4">
-        <div className="h-24 bg-slate-800/60 rounded-xl animate-pulse" />
-        <div className="h-48 bg-slate-800/60 rounded-xl animate-pulse" />
-        <div className="h-24 bg-slate-800/60 rounded-xl animate-pulse" />
+      <div className="p-5 space-y-3">
+        <div className="h-20 bg-gray-100 rounded-xl animate-pulse" />
+        <div className="h-40 bg-gray-100 rounded-xl animate-pulse" />
+        <div className="h-20 bg-gray-100 rounded-xl animate-pulse" />
       </div>
     );
   }
@@ -44,11 +36,11 @@ export default function CompareTab({ result, isLoading }: Props) {
   if (!result) {
     return (
       <div className="flex flex-col items-center justify-center h-full py-16 text-center px-8">
-        <div className="w-12 h-12 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center mb-4">
-          <span className="text-2xl">⚖️</span>
+        <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center mb-3">
+          <span className="text-base text-gray-400">≈</span>
         </div>
-        <p className="text-slate-400 text-sm font-medium mb-2">暂无对比分析</p>
-        <p className="text-slate-600 text-xs">在 Listings tab 中选择 2-3 个房源，在 Agent Console 输入"对比分析"</p>
+        <p className="text-gray-500 text-sm font-medium mb-1">No comparison yet</p>
+        <p className="text-gray-400 text-xs">Select 2–3 listings, then ask the agent to compare.</p>
       </div>
     );
   }
@@ -58,23 +50,20 @@ export default function CompareTab({ result, isLoading }: Props) {
   return (
     <div className="p-4 space-y-4 overflow-y-auto">
       {/* Summary */}
-      <div className="bg-slate-800/60 rounded-xl border border-white/10 p-4">
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Comparison Summary</p>
-        <p className="text-sm text-slate-200 leading-relaxed">{result.summary}</p>
+      <div className="bg-gray-50 rounded-xl border border-gray-200 p-4">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Summary</p>
+        <p className="text-sm text-gray-700 leading-relaxed">{result.summary}</p>
       </div>
 
       {/* Verdict cards */}
       {Object.keys(result.verdicts).length > 0 && (
         <div className="grid grid-cols-2 gap-3">
           {Object.entries(result.verdicts).map(([key, value]) => (
-            <div key={key} className="bg-slate-800/60 border border-white/10 rounded-xl p-3">
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-base">{VERDICT_ICONS[key] || "•"}</span>
-                <p className="text-xs text-slate-500 font-medium">{VERDICT_LABELS[key] || key}</p>
-              </div>
-              <p className="text-sm text-white font-semibold truncate">{value}</p>
+            <div key={key} className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+              <p className="text-xs text-gray-400 font-medium mb-1">{VERDICT_LABELS[key] || key}</p>
+              <p className="text-sm text-gray-800 font-semibold truncate">{value}</p>
               {result.verdict_explanations?.[key] && (
-                <p className="text-xs text-slate-500 mt-1 leading-snug line-clamp-2">
+                <p className="text-xs text-gray-500 mt-1 leading-snug line-clamp-2">
                   {result.verdict_explanations[key]}
                 </p>
               )}
@@ -85,31 +74,31 @@ export default function CompareTab({ result, isLoading }: Props) {
 
       {/* Comparison table */}
       {result.comparison_rows.length > 0 && (
-        <div className="bg-slate-800/60 rounded-xl border border-white/10 overflow-hidden">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-4 py-3 border-b border-white/5">
-            Side-by-Side Comparison
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-4 py-3 border-b border-gray-100">
+            Side-by-Side
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-white/5">
-                  <th className="text-left text-slate-500 px-4 py-2.5 font-medium w-28">Category</th>
+                <tr className="border-b border-gray-100 bg-gray-50">
+                  <th className="text-left text-gray-400 px-4 py-2.5 font-medium w-28">Criteria</th>
                   {listingIds.map((id, i) => (
-                    <th key={id} className="text-left text-slate-400 px-4 py-2.5 font-medium">
+                    <th key={id} className="text-left text-gray-500 px-4 py-2.5 font-medium">
                       Option {i + 1}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-gray-100">
                 {result.comparison_rows.map((row) => (
-                  <tr key={row.category} className="hover:bg-white/2 transition-colors">
-                    <td className="text-slate-500 px-4 py-2.5 font-medium">{row.category}</td>
+                  <tr key={row.category} className="hover:bg-gray-50 transition-colors">
+                    <td className="text-gray-500 px-4 py-2.5 font-medium">{row.category}</td>
                     {listingIds.map((id) => (
                       <td
                         key={id}
                         className={`px-4 py-2.5 ${
-                          row.winner === id ? "text-emerald-300 font-medium" : "text-slate-300"
+                          row.winner === id ? "text-emerald-700 font-semibold" : "text-gray-600"
                         }`}
                       >
                         {row.values[id] || "—"}
@@ -127,9 +116,9 @@ export default function CompareTab({ result, isLoading }: Props) {
       )}
 
       {/* Bottom line */}
-      <div className="bg-emerald-500/8 border border-emerald-500/20 rounded-xl p-4">
-        <p className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-2">Bottom Line</p>
-        <p className="text-sm text-slate-200 leading-relaxed">{result.bottom_line}</p>
+      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+        <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wider mb-2">Recommendation</p>
+        <p className="text-sm text-gray-700 leading-relaxed">{result.bottom_line}</p>
       </div>
     </div>
   );

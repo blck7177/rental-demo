@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { ClientProfile } from "@/lib/api";
 
-const STATUS_COLORS: Record<string, string> = {
-  "Active Search": "bg-emerald-500/15 text-emerald-400 border-emerald-500/25",
-  Shortlisted: "bg-blue-500/15 text-blue-400 border-blue-500/25",
-  "Follow-up": "bg-amber-500/15 text-amber-400 border-amber-500/25",
-  Closed: "bg-slate-500/15 text-slate-400 border-slate-500/25",
+const STATUS_STYLES: Record<string, string> = {
+  "Active Search": "bg-emerald-50 text-emerald-700 border-emerald-200",
+  Shortlisted:    "bg-blue-50 text-blue-600 border-blue-200",
+  "Follow-up":    "bg-amber-50 text-amber-700 border-amber-200",
+  Closed:         "bg-gray-100 text-gray-500 border-gray-200",
 };
 
 interface Props {
@@ -21,28 +21,28 @@ export default function ClientSelector({ clients, activeClientId, onSelect }: Pr
 
   if (clients.length === 0) {
     return (
-      <div className="bg-slate-800/80 rounded-xl border border-white/10 p-3">
-        <p className="text-xs text-slate-500 text-center py-2">加载客户列表...</p>
+      <div className="bg-white rounded-xl border border-gray-200 p-3">
+        <p className="text-xs text-gray-400 text-center py-2">Loading clients...</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-slate-800/80 rounded-xl border border-white/10 overflow-hidden">
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       {/* Header */}
-      <div className="px-3 py-2.5 border-b border-white/5 flex items-center justify-between">
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Clients</p>
+      <div className="px-3 py-2.5 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Clients</p>
         <div className="relative">
           <button
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
-            className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 bg-slate-700/50 hover:bg-slate-700 border border-white/5 rounded-lg px-2 py-1 transition-colors"
+            className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 bg-white hover:bg-gray-50 border border-gray-200 rounded-md px-2 py-1 transition-colors"
           >
-            <span className="text-base leading-none">+</span>
+            <span className="text-sm leading-none">+</span>
             <span>New</span>
           </button>
           {showTooltip && (
-            <div className="absolute right-0 top-full mt-1.5 z-50 bg-slate-700 border border-white/10 rounded-lg px-3 py-2 text-xs text-slate-300 whitespace-nowrap shadow-xl">
+            <div className="absolute right-0 top-full mt-1.5 z-50 bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs text-gray-600 whitespace-nowrap">
               Create client — coming soon
             </div>
           )}
@@ -50,33 +50,33 @@ export default function ClientSelector({ clients, activeClientId, onSelect }: Pr
       </div>
 
       {/* Client list */}
-      <ul className="max-h-[180px] overflow-y-auto divide-y divide-white/5">
+      <ul className="max-h-[160px] overflow-y-auto divide-y divide-gray-100">
         {clients.map((client) => {
           const isActive = client.client_id === activeClientId;
-          const statusClass = STATUS_COLORS[client.status] ?? STATUS_COLORS["Active Search"];
+          const statusClass = STATUS_STYLES[client.status] ?? STATUS_STYLES["Active Search"];
 
           return (
             <li key={client.client_id}>
               <button
                 onClick={() => onSelect(client)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 text-left transition-colors ${
+                className={`w-full flex items-center justify-between px-3 py-2 text-left transition-colors ${
                   isActive
-                    ? "bg-emerald-500/10 border-l-2 border-l-emerald-500"
-                    : "hover:bg-slate-700/40 border-l-2 border-l-transparent"
+                    ? "bg-blue-50 border-l-2 border-l-blue-500"
+                    : "hover:bg-gray-50 border-l-2 border-l-transparent"
                 }`}
               >
                 <div className="min-w-0">
-                  <p className={`text-xs font-medium truncate ${isActive ? "text-white" : "text-slate-300"}`}>
+                  <p className={`text-xs font-medium truncate ${isActive ? "text-blue-700" : "text-gray-700"}`}>
                     {client.name}
                   </p>
                   {client.neighborhoods.length > 0 && (
-                    <p className="text-xs text-slate-600 truncate mt-0.5">
+                    <p className="text-xs text-gray-400 truncate mt-0.5">
                       {client.neighborhoods.slice(0, 2).join(", ")}
                     </p>
                   )}
                 </div>
                 <span className={`text-xs px-1.5 py-0.5 rounded-full border flex-shrink-0 ml-2 ${statusClass}`}>
-                  {client.status.replace("Active Search", "Active").replace("Follow-up", "Follow-up")}
+                  {client.status.replace("Active Search", "Active")}
                 </span>
               </button>
             </li>
